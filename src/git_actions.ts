@@ -192,7 +192,7 @@ async function getScanRootsForCurrentPlatform(): Promise<string[]> {
     return availableRoots.length > 0 ? availableRoots : ["/"];
 }
 
-async function main() {
+export async function main() {
     const scanRootArg = process.argv[2];
     if(scanRootArg) {
         const scanRoot = path.resolve(scanRootArg);
@@ -211,6 +211,7 @@ async function main() {
         mergeRepoCommits(allRepoCommits, commits);
     }
     console.log(JSON.stringify(allRepoCommits, null, 2));
+    return allRepoCommits;
 }
 
 void main();
