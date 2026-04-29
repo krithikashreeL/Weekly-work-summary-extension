@@ -2,6 +2,33 @@
 // for the documentation about the tasks.json format
 {
 	"version": "2.0.0",
+	"problemMatchers": [
+		{
+			"name": "esbuild-watch",
+			"owner": "typescript",
+			"fileLocation": [
+				"relative",
+				"${workspaceFolder}"
+			],
+			"pattern": [
+				{
+					"regexp": "^✘ \\[ERROR\\] (.*)$",
+					"message": 1
+				},
+				{
+					"regexp": "^    (.*):(\\d+):(\\d+):$",
+					"file": 1,
+					"line": 2,
+					"column": 3
+				}
+			],
+			"background": {
+				"activeOnStart": true,
+				"beginsPattern": "^\\[watch\\] build started$",
+				"endsPattern": "^\\[watch\\] build finished$"
+			}
+		}
+	],
 	"tasks": [
 		{
             "label": "watch",
@@ -21,7 +48,32 @@
             "type": "npm",
             "script": "watch:esbuild",
             "group": "build",
-            "problemMatcher": "$esbuild-watch",
+            "problemMatcher": [
+				{
+					"owner": "typescript",
+					"fileLocation": [
+						"relative",
+						"${workspaceFolder}"
+					],
+					"pattern": [
+						{
+							"regexp": "^✘ \\[ERROR\\] (.*)$",
+							"message": 1
+						},
+						{
+							"regexp": "^    (.*):(\\d+):(\\d+):$",
+							"file": 1,
+							"line": 2,
+							"column": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^\\[watch\\] build started$",
+						"endsPattern": "^\\[watch\\] build finished$"
+					}
+				}
+			],
             "isBackground": true,
             "label": "npm: watch:esbuild",
             "presentation": {

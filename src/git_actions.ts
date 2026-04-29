@@ -5,7 +5,7 @@ import { promisify } from "util";
 import { exec as execCallback } from "child_process";
 
 const exec = promisify(execCallback);
-const ONE_WEEK_AGO = "1 week ago";
+const DEFAULT_LOOKBACK = "1 week ago";
 const MAX_SCAN_DEPTH = 8;
 const GIT_CONCURRENCY = 6;
 const WINDOWS_DRIVE_A = 67; // C
@@ -117,14 +117,14 @@ async function findGitRepos(scanRoot: string): Promise<string[]> {
     return repos;
 }
 
-async function getRepoCommitsFromPastWeek(repoPath: string): Promise<CommitsByDate> {
+async function getRepoCommitsSince(repoPath: string, since: string): Promise<CommitsByDate> {
     const gitLog = await exec(
-        `git -C "${escapeForDoubleQuotes(repoPath)}" log --all --since="${ONE_WEEK_AGO}" --date=short --pretty=format:"%ad|%s"`
+        `git -C "${escapeForDoubleQuotes(repoPath)}" log --all --since="${escapeForDoubleQuotes(since)}" --date=short --pretty=format:"%ad|%s"`
     );
     return parseCommitLines(gitLog.stdout?.toString() ?? "");
 }
 
-async function collectRepoCommits(repoPaths: string[]): Promise<RepoCommits> {
+async function collectRepoCommits(repoPaths: string[], since: string): Promise<RepoCommits> {
     const results: RepoCommits = {};
     let index = 0;
 
@@ -135,7 +135,7 @@ async function collectRepoCommits(repoPaths: string[]): Promise<RepoCommits> {
             const repoPath = repoPaths[currentIndex];
 
             try {
-                const commitsByDate = await getRepoCommitsFromPastWeek(repoPath);
+                const commitsByDate = await getRepoCommitsSince(repoPath, since);
                 if(Object.keys(commitsByDate).length > 0) {
                     results[path.basename(repoPath)] = commitsByDate;
                 }
@@ -153,9 +153,9 @@ async function collectRepoCommits(repoPaths: string[]): Promise<RepoCommits> {
     return results;
 }
 
-export async function getAllReposUserWorkedOn(scanRoot = process.cwd()): Promise<RepoCommits> {
+export async function getAllReposUserWorkedOn(scanRoot = process.cwd(), since = DEFAULT_LOOKBACK): Promise<RepoCommits> {
     const repoPaths = await findGitRepos(scanRoot);
-    return collectRepoCommits(repoPaths);
+    return collectRepoCommits(repoPaths, since);
 }
 
 async function pathExists(dirPath: string): Promise<boolean> {
@@ -167,7 +167,7 @@ async function pathExists(dirPath: string): Promise<boolean> {
     }
 }
 
-async function getScanRootsForCurrentPlatform(): Promise<string[]> {
+export async function getScanRootsForCurrentPlatform(): Promise<string[]> {
     if(process.platform === "win32") {
         const roots: string[] = [];
         for(let code = WINDOWS_DRIVE_A; code <= WINDOWS_DRIVE_Z; code++) {
@@ -192,26 +192,19 @@ async function getScanRootsForCurrentPlatform(): Promise<string[]> {
     return availableRoots.length > 0 ? availableRoots : ["/"];
 }
 
-export async function main() {
-    const scanRootArg = process.argv[2];
-    if(scanRootArg) {
-        const scanRoot = path.resolve(scanRootArg);
-        console.log(`Scanning for repos in: ${scanRoot}`);
-        const repos = await getAllReposUserWorkedOn(scanRoot);
-        console.log(JSON.stringify(repos, null, 2));
-        return;
-    }
-
-    const roots = await getScanRootsForCurrentPlatform();
-    console.log(`Scanning for repos in roots: ${roots.join(", ")}`);
-
+export async function getWeeklySummaryAcrossRoots(roots: string[], since = DEFAULT_LOOKBACK): Promise<RepoCommits> {
     const allRepoCommits: RepoCommits = {};
     for(const root of roots) {
-        const commits = await getAllReposUserWorkedOn(root);
+        const commits = await getAllReposUserWorkedOn(root, since);
         mergeRepoCommits(allRepoCommits, commits);
     }
-    console.log(JSON.stringify(allRepoCommits, null, 2));
     return allRepoCommits;
 }
 
-void main();
+export async function getWeeklySummary(scanRoot?: string, since = DEFAULT_LOOKBACK): Promise<RepoCommits> {
+    if(scanRoot) {
+        return getAllReposUserWorkedOn(path.resolve(scanRoot), since);
+    }
+    const roots = await getScanRootsForCurrentPlatform();
+    return getWeeklySummaryAcrossRoots(roots, since);
+}

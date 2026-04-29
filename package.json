@@ -1,27 +1,36 @@
 {
-  "name": "weekly-work-summary-generator",
-  "displayName": "weekly-work-summary-generator",
-  "description": "VS code extension to get the weekly work done in plain english for brag docs",
+  "name": "git-worklog",
+  "publisher": "krith",
+  "displayName": "Git Worklog",
+  "description": "Generate git worklog activity from one or more repos.",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.116.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:git-worklog.generate",
+    "onCommand:git-worklog.generateWeekly"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "weekly-work-summary-generator.helloWorld",
-        "title": "Hello World"
+        "command": "git-worklog.generate",
+        "title": "Git Worklog: Generate"
+      },
+      {
+        "command": "git-worklog.generateWeekly",
+        "title": "Weekly Worklog: Generate"
       }
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "worklog": "node dist/cli.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
